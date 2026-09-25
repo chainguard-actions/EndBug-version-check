@@ -1,0 +1,53 @@
+name: Test static-checking local version is newer
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create local package.json with newer version
+        run: |
+          # Local version 3.0.0 is newer than remote 2.1.5
+          echo '{"name":"test-pkg","version":"3.0.0"}' > "$GITHUB_WORKSPACE/test-local-pkg.json"
+
+      - id: action
+        uses: .
+        with:
+          file-name: test-local-pkg.json
+          file-url: https://raw.githubusercontent.com/EndBug/version-check/v2.1.5/package.json
+          static-checking: localIsNew
+
+      - name: Assert changed is true
+        env:
+          CHANGED: ${{ steps.action.outputs.changed }}
+        run: |
+          echo "changed: $CHANGED"
+          if [ "$CHANGED" != "true" ]; then
+            echo "FAIL: expected changed=true (local 3.0.0 > remote 2.1.5)"
+            exit 1
+          fi
+          echo "PASS: changed=true"
+
+      - name: Assert version output
+        env:
+          VERSION: ${{ steps.action.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "3.0.0" ]; then
+            echo "FAIL: expected version=3.0.0, got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS: version=3.0.0"
+
+      - name: Assert type output is major
+        env:
+          TYPE: ${{ steps.action.outputs.type }}
+        run: |
+          echo "type: $TYPE"
+          if [ "$TYPE" != "major" ]; then
+            echo "FAIL: expected type=major, got '$TYPE'"
+            exit 1
+          fi
+          echo "PASS: type=major"

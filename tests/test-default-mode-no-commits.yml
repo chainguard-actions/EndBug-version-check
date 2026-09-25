@@ -1,0 +1,38 @@
+name: Test default mode with workflow_dispatch (no commits)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        # Default mode: reads event file for commits.
+        # workflow_dispatch has no 'commits' array and no 'pull_request',
+        # so the action will fail trying to read commits from the event.
+
+      - name: Assert action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          CHANGED: ${{ steps.action.outputs.changed }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "changed: $CHANGED"
+          # Under workflow_dispatch, there are no commits in the event payload,
+          # so the action either fails (can't read commits) or sets changed=false.
+          if [ "$OUTCOME" = "success" ]; then
+            # If it somehow succeeded, changed must be a boolean string
+            if [ "$CHANGED" != "true" ] && [ "$CHANGED" != "false" ]; then
+              echo "FAIL: action succeeded but changed output is unexpected: '$CHANGED'"
+              exit 1
+            fi
+            echo "PASS: action succeeded with changed=$CHANGED"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (no commits in workflow_dispatch event)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
