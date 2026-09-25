@@ -1,0 +1,59 @@
+name: Test static-checking no version change
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Write both local and remote package.json with the same version
+      - name: Write remote fixture package.json (same version)
+        run: |
+          mkdir -p /tmp/pkg-server-same
+          cat > /tmp/pkg-server-same/package.json <<'EOF'
+          {
+            "name": "test-pkg",
+            "version": "1.5.0"
+          }
+          EOF
+
+      # Start a simple HTTP server to serve the remote package.json
+      - name: Start HTTP server for remote package.json
+        run: |
+          cd /tmp/pkg-server-same
+          python3 -m http.server 18082 &
+          echo $! > /tmp/http-server-same.pid
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:18082/package.json > /dev/null 2>&1; then
+              echo "HTTP server ready"
+              break
+            fi
+            sleep 0.5
+          done
+
+      - id: action
+        uses: .
+        with:
+          file-name: tests/fixtures/same-version-package.json
+          file-url: http://localhost:18082/package.json
+          static-checking: localIsNew
+
+      - name: Stop HTTP server
+        if: always()
+        run: |
+          if [ -f /tmp/http-server-same.pid ]; then
+            kill "$(cat /tmp/http-server-same.pid)" 2>/dev/null || true
+          fi
+
+      - name: Assert changed is false
+        env:
+          CHANGED: ${{ steps.action.outputs.changed }}
+        run: |
+          echo "changed: $CHANGED"
+          if [ "$CHANGED" != "false" ]; then
+            echo "FAIL: expected changed=false but got '$CHANGED'"
+            exit 1
+          fi
+          echo "PASS"

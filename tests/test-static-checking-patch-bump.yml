@@ -1,0 +1,81 @@
+name: Test static-checking patch version bump
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Write a "remote" package.json with an older patch version
+      - name: Write remote fixture package.json (older patch)
+        run: |
+          mkdir -p /tmp/pkg-server-patch
+          cat > /tmp/pkg-server-patch/package.json <<'EOF'
+          {
+            "name": "test-pkg",
+            "version": "1.2.3"
+          }
+          EOF
+
+      # Start a simple HTTP server to serve the remote package.json
+      - name: Start HTTP server for remote package.json
+        run: |
+          cd /tmp/pkg-server-patch
+          python3 -m http.server 18083 &
+          echo $! > /tmp/http-server-patch.pid
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:18083/package.json > /dev/null 2>&1; then
+              echo "HTTP server ready"
+              break
+            fi
+            sleep 0.5
+          done
+
+      - id: action
+        uses: .
+        with:
+          file-name: tests/fixtures/patch-bump-package.json
+          file-url: http://localhost:18083/package.json
+          static-checking: localIsNew
+
+      - name: Stop HTTP server
+        if: always()
+        run: |
+          if [ -f /tmp/http-server-patch.pid ]; then
+            kill "$(cat /tmp/http-server-patch.pid)" 2>/dev/null || true
+          fi
+
+      - name: Assert changed is true
+        env:
+          CHANGED: ${{ steps.action.outputs.changed }}
+        run: |
+          echo "changed: $CHANGED"
+          if [ "$CHANGED" != "true" ]; then
+            echo "FAIL: expected changed=true but got '$CHANGED'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert version is 1.2.4
+        env:
+          VERSION: ${{ steps.action.outputs.version }}
+        run: |
+          echo "version: $VERSION"
+          if [ "$VERSION" != "1.2.4" ]; then
+            echo "FAIL: expected version=1.2.4 but got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert type is patch
+        env:
+          TYPE: ${{ steps.action.outputs.type }}
+        run: |
+          echo "type: $TYPE"
+          if [ "$TYPE" != "patch" ]; then
+            echo "FAIL: expected type=patch but got '$TYPE'"
+            exit 1
+          fi
+          echo "PASS"
