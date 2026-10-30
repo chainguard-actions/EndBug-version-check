@@ -6,10 +6,10 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v2.1.5 | [`v2.1.5`](https://github.com/chainguard-actions/EndBug-version-check/tree/v2.1.5) | [`36ff30f`](https://github.com/EndBug/version-check/commit/36ff30f37c7deabe56a30caa043d127be658c425) |
-| v3.0.0 | [`v3.0.0`](https://github.com/chainguard-actions/EndBug-version-check/tree/v3.0.0) | [`095362f`](https://github.com/EndBug/version-check/commit/095362f3cd50f690c8fa0e6afeea81834bd8d320) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| v2.1.5 | [`v2.1.5`](https://github.com/chainguard-actions/EndBug-version-check/tree/v2.1.5) | [`36ff30f`](https://github.com/EndBug/version-check/commit/36ff30f37c7deabe56a30caa043d127be658c425) | [`HARDENING.md`](https://github.com/chainguard-actions/EndBug-version-check/blob/v2.1.5/HARDENING.md) |
+| v3.0.0 | [`v3.0.0`](https://github.com/chainguard-actions/EndBug-version-check/tree/v3.0.0) | [`095362f`](https://github.com/EndBug/version-check/commit/095362f3cd50f690c8fa0e6afeea81834bd8d320) | [`HARDENING.md`](https://github.com/chainguard-actions/EndBug-version-check/blob/v3.0.0/HARDENING.md) |
 
 ## Privacy
 
